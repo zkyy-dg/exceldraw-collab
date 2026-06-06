@@ -117,10 +117,14 @@ wss.on("connection", (ws: WebSocket, _req: IncomingMessage) => {
         }
 
         default:
-          console.log("[WS] Unknown message type:", message.type);
+          // Echo back unrecognized messages as a basic connectivity test
+          ws.send(JSON.stringify({ type: "ECHO", payload: message }));
+          console.log("[WS] Echoed unknown message type:", message.type);
       }
     } catch (err) {
-      console.error("[WS] Failed to handle message:", err);
+      // Echo raw data back for basic connectivity testing
+      ws.send(data);
+      console.log("[WS] Echoed raw message:", data.toString().substring(0, 100));
     }
   });
 
