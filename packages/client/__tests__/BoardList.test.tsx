@@ -98,7 +98,10 @@ describe("BoardList", () => {
 
       renderBoardList();
 
-      expect(mockFetch).toHaveBeenCalledWith("/api/boards");
+      // Wait for the fetch to resolve and state to update
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith("/api/boards");
+      });
     });
   });
 
@@ -286,6 +289,7 @@ describe("BoardList", () => {
   describe("Error handling", () => {
     it("should handle fetch failure gracefully", async () => {
       mockFetch.mockRejectedValue(new Error("Network error"));
+      const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
       renderBoardList();
 
@@ -293,6 +297,8 @@ describe("BoardList", () => {
       await waitFor(() => {
         expect(screen.queryByText("Loading boards...")).not.toBeInTheDocument();
       });
+
+      consoleSpy.mockRestore();
     });
   });
 });
