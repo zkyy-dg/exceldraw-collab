@@ -1,13 +1,21 @@
-import { Whiteboard } from "./components/Whiteboard";
-
-// For now, use a default room ID. US-008 will add routing.
-// The roomId can come from URL params or a board selection page.
-const DEFAULT_ROOM_ID = "default-room";
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
+import { BoardList } from "./components/BoardList.js";
+import { Whiteboard } from "./components/Whiteboard.js";
 
 export default function App() {
   return (
-    <div className="h-full w-full">
-      <Whiteboard roomId={DEFAULT_ROOM_ID} />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<BoardList />} />
+        <Route path="/board/:id" element={<BoardRoute />} />
+      </Routes>
+    </BrowserRouter>
   );
+}
+
+/** Wrapper that passes the board ID from URL params to Whiteboard */
+function BoardRoute() {
+  const params = useParams();
+  const boardId = params.id ?? "default";
+  return <Whiteboard roomId={boardId} />;
 }
