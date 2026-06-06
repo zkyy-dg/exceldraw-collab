@@ -151,8 +151,8 @@
         "Verify in browser using dev-browser skill: create a board, see it in list, click to navigate"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added react-router-dom. BoardList component at route /, Whiteboard at /board/:id. Inline input for board name (no alert/prompt). Relative time display. Empty state message. Responsive Tailwind layout. SPA routing via BrowserRouter."
     },
     {
       "id": "US-009",
