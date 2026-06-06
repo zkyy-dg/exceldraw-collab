@@ -18,3 +18,11 @@
   - Always verify imports against actual package exports, not just docs
   - `better-sqlite3` native build needs `pnpm rebuild` after initial install if build scripts were blocked
 ---
+
+## 2026/06/07 - US-002
+- WebSocket echo server already working from US-001 implementation, added raw echo fallback for non-JSON messages
+- Files modified: packages/server/src/index.ts
+- **Learnings for future iterations:**
+  - The catch block in message handler serves double duty: echo for non-JSON, error logging for parse failures
+  - WebSocket echo is useful for connectivity testing — keep it as fallback even after adding protocol handling
+---

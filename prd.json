@@ -34,8 +34,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "WebSocket upgrade handled via createAdaptorServer + server.on('upgrade') + ws.WebSocketServer({ noServer: true }). Echo for non-JSON raw data; structured messages handled by protocol. Note: upgradeWebSocket not available in @hono/node-server for Node.js."
     },
     {
       "id": "US-003",
