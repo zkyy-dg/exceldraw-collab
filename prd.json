@@ -168,8 +168,8 @@
         "Verify in browser using dev-browser skill: draw something, refresh, drawing persists"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Debounced save (2s) on onChange and ELEMENTS_UPDATE. Load saved elements from GET /api/boards/:id/elements on INIT. Ctrl+S manual save. Save indicator (Saving.../Saved) overlay. Uses existing server PUT/GET elements endpoints."
     },
     {
       "id": "US-010",
