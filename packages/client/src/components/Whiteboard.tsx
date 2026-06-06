@@ -25,6 +25,26 @@ if (typeof window !== "undefined") {
 // Generate a random username for this session
 const USERNAME = "User-" + Math.random().toString(36).substring(2, 6);
 
+// Collaborator data stored by socketId
+interface RemoteCollaborator {
+  pointer?: { x: number; y: number };
+  username: string;
+  color: { background: string; stroke: string };
+}
+
+// Generate a consistent color from a string hash
+function hashColor(str: string): { background: string; stroke: string } {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return {
+    background: `hsl(${hue}, 80%, 85%)`,
+    stroke: `hsl(${hue}, 80%, 55%)`,
+  };
+}
+
 interface WhiteboardProps {
   roomId: string;
 }
@@ -32,6 +52,27 @@ interface WhiteboardProps {
 export function Whiteboard({ roomId }: WhiteboardProps) {
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const collabSocketRef = useRef<CollabSocket | null>(null);
+  const collaboratorsRef = useRef<Map<string, RemoteCollaborator>>(new Map());
+
+  const updateCollaborators = useCallback(() => {
+    const api = excalidrawAPIRef.current;
+    if (!api) return;
+
+    const excalidrawCollaborators = new Map<string, any>();
+    for (const [socketId, collab] of collaboratorsRef.current) {
+      excalidrawCollaborators.set(socketId as any, {
+        pointer: collab.pointer,
+        username: collab.username,
+        color: collab.color,
+      });
+    }
+
+    api.updateScene({
+      appState: {
+        collaborators: excalidrawCollaborators as any,
+      },
+    });
+  }, []);
 
   useEffect(() => {
     const socket = new CollabSocket(roomId, USERNAME);
@@ -45,6 +86,14 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
         case "INIT": {
           const { users } = message.payload as { users: Array<{ socketId: string; username: string }> };
           console.log("[Whiteboard] Users in room:", users);
+          // Initialize collaborators for existing users
+          for (const user of users) {
+            collaboratorsRef.current.set(user.socketId, {
+              username: user.username,
+              color: hashColor(user.socketId),
+            });
+          }
+          updateCollaborators();
           break;
         }
         case "ELEMENTS_UPDATE": {
@@ -57,14 +106,30 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
           }
           break;
         }
+        case "POINTER_UPDATE": {
+          const { pointer, socketId } = message.payload as { pointer: PointerData; socketId: string };
+          const collab = collaboratorsRef.current.get(socketId);
+          if (collab) {
+            collab.pointer = { x: pointer.x, y: pointer.y };
+            updateCollaborators();
+          }
+          break;
+        }
         case "USER_JOINED": {
-          const { user } = message.payload as { user: { username: string } };
+          const { user } = message.payload as { user: { socketId: string; username: string } };
           console.log("[Whiteboard] User joined:", user.username);
+          collaboratorsRef.current.set(user.socketId, {
+            username: user.username,
+            color: hashColor(user.socketId),
+          });
+          updateCollaborators();
           break;
         }
         case "USER_LEFT": {
           const { socketId } = message.payload as { socketId: string };
           console.log("[Whiteboard] User left:", socketId);
+          collaboratorsRef.current.delete(socketId);
+          updateCollaborators();
           break;
         }
       }
@@ -73,8 +138,9 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
     return () => {
       socket.disconnect();
       collabSocketRef.current = null;
+      collaboratorsRef.current.clear();
     };
-  }, [roomId]);
+  }, [roomId, updateCollaborators]);
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     excalidrawAPIRef.current = api;
