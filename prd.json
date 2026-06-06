@@ -113,8 +113,8 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "CollabSocket refactored: callback-based connect(onMessage), reconcileElements with AppState param. Whiteboard wired onChange→sendElementsUpdate, onPointerUpdate→sendPointerUpdate, ELEMENTS_UPDATE→mergeElements+updateScene. Auto-reconnect on disconnect. Types: OrderedExcalidrawElement not re-exported, used @ts-expect-error import."
     },
     {
       "id": "US-007",
