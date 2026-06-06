@@ -185,8 +185,8 @@
         "User count in room updates correctly (join increases, leave decreases)"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "12/12 e2e tests passed: REST API persistence (create/save/load/list boards), WebSocket collaboration (JOIN→INIT, USER_JOINED, ELEMENTS_UPDATE, POINTER_UPDATE), disconnect/reconnect, user count. All criteria verified."
     }
   ]
 }
