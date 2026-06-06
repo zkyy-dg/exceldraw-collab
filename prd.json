@@ -131,8 +131,8 @@
         "Verify in browser using dev-browser skill: open two tabs, see cursor movement in both"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Uses Excalidraw built-in collaborators map via updateScene({ appState: { collaborators } }). Color derived from socketId hash (hsl). Pointer updates rendered in real-time. USER_LEFT removes cursor."
     },
     {
       "id": "US-008",
