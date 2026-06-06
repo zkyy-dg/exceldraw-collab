@@ -94,8 +94,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Copied Excalidraw fonts to public/fonts/, added install:fonts + postinstall scripts. Vite build succeeds (2350 modules). Typecheck passes."
     },
     {
       "id": "US-006",
