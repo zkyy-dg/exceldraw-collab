@@ -26,3 +26,13 @@
   - The catch block in message handler serves double duty: echo for non-JSON, error logging for parse failures
   - WebSocket echo is useful for connectivity testing — keep it as fallback even after adding protocol handling
 ---
+
+## 2026/06/07 - US-003
+- Database schema and board CRUD API pre-built, verified all endpoints via curl
+- All endpoints working: POST/GET/GET:id/PUT:elements/GET:elements, 404 handling, CORS
+- Added *.db-shm and *.db-wal to .gitignore (WAL mode creates these files)
+- **Learnings for future iterations:**
+  - better-sqlite3 supports `.bind().get()` chain — use .get() for RETURNING queries, .run() for mutations
+  - SQLite RETURNING clause works with better-sqlite3 .get()
+  - DB path resolves relative to compiled output (dist/) — use __dirname derived from import.meta.url
+---

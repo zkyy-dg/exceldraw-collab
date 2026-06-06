@@ -57,8 +57,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Pre-built, verified all endpoints. better-sqlite3 uses .bind().get() pattern. RETURNING clause works with .get(). Added *.db-shm/*.db-wal to .gitignore."
     },
     {
       "id": "US-004",
