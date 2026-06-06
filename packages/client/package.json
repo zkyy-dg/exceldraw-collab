@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "install:fonts": "mkdir -p public/fonts && cp -r ../../node_modules/@excalidraw/excalidraw/dist/prod/fonts/* public/fonts/",
+    "postinstall": "npm run install:fonts"
   },
   "dependencies": {
     "react": "^19.0.0",
