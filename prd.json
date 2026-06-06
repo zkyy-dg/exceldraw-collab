@@ -17,8 +17,8 @@
         "Typecheck passes for both packages (`npx tsc --noEmit`)"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Scaffold pre-built, fixed typecheck errors: PointerUpdate type (use local PointerData), EXCALIDRAW_ASSET_PATH (declare global), upgradeWebSocket (not in @hono/node-server 1.19, use createAdaptorServer + ws upgrade handler)"
     },
     {
       "id": "US-002",

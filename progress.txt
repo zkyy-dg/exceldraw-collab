@@ -1,0 +1,20 @@
+## Codebase Patterns
+- @hono/node-server 1.19+ does NOT export `upgradeWebSocket`. Use `createAdaptorServer({ fetch })` to get a Node.js http.Server, then add `server.on("upgrade", ...)` with ws.WebSocketServer({ noServer: true })
+- Excalidraw does NOT export `PointerUpdate` type. Define locally: `{ x: number; y: number; tool: "pointer" | "laser"; pressure: number; pointerType: string }`
+- `window.EXCALIDRAW_ASSET_PATH` is not in Excalidraw's type declarations. Use `declare global { interface Window { EXCALIDRAW_ASSET_PATH: string } }` to avoid TS errors
+- Excalidraw's @radix-ui/react-tabs has peer dep warnings for React 19 — harmless, ignore
+- pnpm requires `onlyBuiltDependencies` in root package.json to compile native modules like better-sqlite3
+- The server runs on PORT env var (default 3100 in this environment, default 3001 in code)
+- `tsconfig.base.json` at root with `"moduleResolution": "bundler"` is shared by both packages
+
+---
+
+## 2026/06/07 - US-001
+- Verified and fixed pre-built monorepo scaffold to pass all acceptance criteria
+- Files modified: packages/client/src/collab/socket.ts, packages/client/src/components/Whiteboard.tsx, packages/server/src/index.ts
+- **Learnings for future iterations:**
+  - The `@hono/node-server` docs mention `upgradeWebSocket` but it's only available in Bun/Deno/CF adapters. Node.js must use raw `ws` with manual upgrade handling
+  - `createAdaptorServer` returns a native `http.Server`, allowing `server.on("upgrade", ...)` for WebSocket
+  - Always verify imports against actual package exports, not just docs
+  - `better-sqlite3` native build needs `pnpm rebuild` after initial install if build scripts were blocked
+---
