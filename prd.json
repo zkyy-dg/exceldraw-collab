@@ -76,8 +76,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Pre-built, multi-client room test passed: JOIN→INIT/USER_JOINED, ELEMENTS_UPDATE broadcast, POINTER_UPDATE broadcast, disconnect→USER_LEFT all verified."
     },
     {
       "id": "US-005",

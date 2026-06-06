@@ -36,3 +36,12 @@
   - SQLite RETURNING clause works with better-sqlite3 .get()
   - DB path resolves relative to compiled output (dist/) — use __dirname derived from import.meta.url
 ---
+
+## 2026/06/07 - US-004
+- WebSocket room management pre-built in ws/room.ts, verified with multi-client integration test
+- Test confirmed: JOIN→INIT/USER_JOINED, ELEMENTS_UPDATE/POINTER_UPDATE broadcast to room, disconnect→USER_LEFT
+- Files verified: packages/server/src/ws/room.ts, packages/server/src/index.ts
+- **Learnings for future iterations:**
+  - Room data is in-memory only — will be lost on server restart (acceptable for MVP)
+  - broadcastToRoom checks readyState === 1 before sending — prevents errors on half-open connections
+---
