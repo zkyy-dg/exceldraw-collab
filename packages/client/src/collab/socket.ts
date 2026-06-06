@@ -1,29 +1,35 @@
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { reconcileElements } from "@excalidraw/excalidraw";
+import type { AppState } from "@excalidraw/excalidraw/types";
+
+// Element types for sync — use broader types to avoid branded type issues
+// @ts-expect-error — OrderedExcalidrawElement is not re-exported from top-level types
+type OrderedExcalidrawElement = import("@excalidraw/excalidraw/types").OrderedExcalidrawElement;
 
 // Pointer data from Excalidraw's onPointerUpdate callback
 export type PointerData = {
   x: number;
   y: number;
   tool: "pointer" | "laser";
-  pressure: number;
-  pointerType: string;
 };
+
+type MessageHandler = (message: Record<string, unknown>) => void;
 
 // WebSocket connection to the collaboration server
 export class CollabSocket {
   private ws: WebSocket | null = null;
   private roomId: string;
   private username: string;
-  private excalidrawAPI: ExcalidrawImperativeAPI | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private messageHandler: MessageHandler | null = null;
 
   constructor(roomId: string, username: string) {
     this.roomId = roomId;
     this.username = username;
   }
 
-  connect(excalidrawAPI: ExcalidrawImperativeAPI): void {
-    this.excalidrawAPI = excalidrawAPI;
+  connect(onMessage: MessageHandler): void {
+    this.messageHandler = onMessage;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
@@ -32,7 +38,6 @@ export class CollabSocket {
 
     this.ws.onopen = () => {
       console.log("[CollabSocket] Connected");
-      // Send JOIN message
       this.send({
         type: "JOIN",
         payload: { roomId: this.roomId, username: this.username },
@@ -50,7 +55,7 @@ export class CollabSocket {
 
     this.ws.onclose = () => {
       console.log("[CollabSocket] Disconnected, reconnecting...");
-      this.reconnectTimer = setTimeout(() => this.connect(excalidrawAPI), 3000);
+      this.reconnectTimer = setTimeout(() => this.connect(onMessage), 3000);
     };
 
     this.ws.onerror = (err) => {
@@ -59,27 +64,13 @@ export class CollabSocket {
   }
 
   private handleMessage(message: Record<string, unknown>): void {
-    if (!this.excalidrawAPI) return;
-
-    switch (message.type) {
-      case "INIT":
-        // Load initial elements
-        console.log("[CollabSocket] Received initial state");
-        break;
-      case "ELEMENTS_UPDATE":
-        // Merge incoming elements with local
-        console.log("[CollabSocket] Received elements update");
-        break;
-      case "POINTER_UPDATE":
-        // Update remote cursor position
-        break;
-      default:
-        console.log("[CollabSocket] Unknown message type:", message.type);
-    }
+    if (!this.messageHandler) return;
+    this.messageHandler(message);
   }
 
-  sendElementsUpdate(elements: unknown[]): void {
-    this.send({ type: "ELEMENTS_UPDATE", payload: { elements } });
+  sendElementsUpdate(elements: readonly OrderedExcalidrawElement[]): void {
+    const serialized = elements.map((el) => ({ ...el }));
+    this.send({ type: "ELEMENTS_UPDATE", payload: { elements: serialized } });
   }
 
   sendPointerUpdate(pointer: PointerData): void {
@@ -95,8 +86,26 @@ export class CollabSocket {
   disconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
     this.ws?.close();
     this.ws = null;
   }
+}
+
+/**
+ * Merge incoming remote elements with local elements.
+ * Uses Excalidraw's reconcileElements: union by element ID, latest version wins.
+ */
+export function mergeElements(
+  localElements: readonly OrderedExcalidrawElement[],
+  remoteElements: readonly OrderedExcalidrawElement[],
+  appState: AppState
+): OrderedExcalidrawElement[] {
+  // Cast to bypass branded types — reconcileElements accepts the same underlying shape
+  return reconcileElements(
+    localElements as any[],
+    remoteElements as any[],
+    appState
+  );
 }
