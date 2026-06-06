@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "exceldraw-collab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Excalidraw multi-user real-time collaborative whiteboard MVP",
+  "onlyBuiltDependencies": ["better-sqlite3", "esbuild"],
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./packages/* dev",
+    "dev:client": "pnpm --filter @exceldraw-collab/client dev",
+    "dev:server": "pnpm --filter @exceldraw-collab/server dev",
+    "build": "pnpm --filter ./packages/* build",
+    "build:client": "pnpm --filter @exceldraw-collab/client build",
+    "build:server": "pnpm --filter @exceldraw-collab/server build",
+    "install:fonts": "cp -r node_modules/@excalidraw/excalidraw/dist/prod/fonts packages/client/public/fonts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

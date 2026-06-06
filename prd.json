@@ -1,0 +1,192 @@
+{
+  "project": "exceldraw-collab",
+  "branchName": "ralph/mvp",
+  "description": "Excalidraw multi-user real-time collaborative whiteboard MVP",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Monorepo scaffold (pnpm workspace + client + server)",
+      "description": "As a developer, I need a monorepo structure with client and server packages so that both can be developed together with shared tooling.",
+      "acceptanceCriteria": [
+        "Root package.json with pnpm workspace config (pnpm-workspace.yaml)",
+        "packages/client: React 19 + Vite 6 + TypeScript, can run `pnpm dev` and see blank page at localhost:5173",
+        "packages/server: Hono + @hono/node-server + TypeScript, can run `pnpm dev` and get HTTP response at localhost:3001/api/health",
+        "Root dev script runs both client and server in parallel (`pnpm dev`)",
+        "tsconfig.base.json shared at root, both packages extend it",
+        "Git repo initialized with initial commit on main branch",
+        "Typecheck passes for both packages (`npx tsc --noEmit`)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Backend Hono + WebSocket echo server",
+      "description": "As a developer, I need a WebSocket endpoint on the backend so that clients can connect and exchange messages in real-time.",
+      "acceptanceCriteria": [
+        "GET /ws endpoint accepts WebSocket upgrade using @hono/node-server upgradeWebSocket",
+        "WebSocket server created with ws.WebSocketServer({ noServer: true })",
+        "Server echoes any received message back to the sender (basic echo)",
+        "Server logs connection and disconnection events to console",
+        "HTTP and WebSocket share the same port (3001)",
+        "Server starts with `pnpm --filter @exceldraw-collab/server dev` using tsx watch",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Database schema and board CRUD API",
+      "description": "As a developer, I need SQLite tables and REST endpoints for board management so that boards can be created, listed, and retrieved.",
+      "acceptanceCriteria": [
+        "better-sqlite3 initialized with WAL mode and foreign keys enabled",
+        "boards table: id (TEXT PK, random hex), name (TEXT), created_at (INTEGER), updated_at (INTEGER)",
+        "board_elements table: board_id (TEXT PK FK), elements_json (TEXT), updated_at (INTEGER)",
+        "Schema created via initSchema() on first DB connection",
+        "DB file stored at packages/server/data/collab.db (auto-created directory)",
+        "POST /api/boards - creates board, returns { id, name, created_at, updated_at }, status 201",
+        "GET /api/boards - returns array of all boards ordered by updated_at DESC",
+        "GET /api/boards/:id - returns single board or 404",
+        "PUT /api/boards/:id/elements - upserts elements_json for a board",
+        "GET /api/boards/:id/elements - returns parsed elements array",
+        "All endpoints return proper JSON and status codes",
+        "CORS enabled for /api/* routes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "WebSocket room management and message broadcast",
+      "description": "As a developer, I need server-side room management so that WebSocket messages are broadcast only to clients in the same board room.",
+      "acceptanceCriteria": [
+        "Room manager module (ws/room.ts) with: joinRoom, leaveRoom, getRoomClients, broadcastToRoom, getRoomSize",
+        "Rooms stored as Map<string, Map<string, ClientInfo>> in memory",
+        "ClientInfo includes: socketId, username, ws reference",
+        "JOIN message handler: stores roomId/username on socket context, returns INIT with existing users, broadcasts USER_JOINED to others",
+        "ELEMENTS_UPDATE message handler: broadcasts to all room clients except sender",
+        "POINTER_UPDATE message handler: broadcasts to all room clients except sender",
+        "onClose handler: removes client from room, broadcasts USER_LEFT to remaining clients",
+        "Message protocol matches types defined in ARCHITECTURE.md",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Frontend Excalidraw SDK integration (blank board renders)",
+      "description": "As a user, I want to see a blank Excalidraw canvas when I open the app so that I can start drawing.",
+      "acceptanceCriteria": [
+        "@excalidraw/excalidraw@^0.18.1 installed and imported",
+        "Whiteboard component renders Excalidraw with 100% height/width container",
+        "Excalidraw CSS imported (@excalidraw/excalidraw/index.css)",
+        "window.EXCALIDRAW_ASSET_PATH set to '/' for self-hosted fonts",
+        "Fonts copied from node_modules/@excalidraw/excalidraw/dist/prod/fonts to packages/client/public/fonts/ (via install:fonts script or postinstall)",
+        "TailwindCSS 4 configured with @tailwindcss/vite plugin, base styles applied",
+        "App renders without console errors at localhost:5173",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Frontend WebSocket client and element sync",
+      "description": "As a user, I want my drawing changes to be sent to the server and other users' changes to appear on my canvas in real-time.",
+      "acceptanceCriteria": [
+        "CollabSocket class in src/collab/socket.ts with: connect, disconnect, sendElementsUpdate, sendPointerUpdate",
+        "WebSocket URL constructed from window.location (ws:// or wss://) with /ws path",
+        "On connect: sends JOIN message with roomId and username",
+        "Excalidraw onChange callback sends ELEMENTS_UPDATE via CollabSocket",
+        "INIT message handler loads initial elements via excalidrawAPI.updateScene()",
+        "ELEMENTS_UPDATE message handler merges incoming elements using reconcileElements pattern (union by element ID, latest version wins)",
+        "Auto-reconnect on disconnect with 3-second delay",
+        "Whiteboard component accepts roomId prop and initializes CollabSocket on mount",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Remote cursor display for other users",
+      "description": "As a user, I want to see other users' cursor positions on the canvas so I know where they are looking/drawing.",
+      "acceptanceCriteria": [
+        "Excalidraw onPointerUpdate callback sends POINTER_UPDATE via CollabSocket with pointer data",
+        "POINTER_UPDATE messages rendered using Excalidraw's built-in collaboration cursor support (collaborators prop or custom cursor overlay)",
+        "Each remote user gets a unique cursor color (derive from socketId hash)",
+        "Username displayed near each remote cursor",
+        "Cursors disappear when user leaves the room (USER_LEFT message)",
+        "Cursor updates are smooth (no visible lag from message batching)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill: open two tabs, see cursor movement in both"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Board list page (create, view, join)",
+      "description": "As a user, I want a landing page where I can see existing boards, create a new one, and join a board to start collaborating.",
+      "acceptanceCriteria": [
+        "BoardList component at route '/' fetches GET /api/boards on mount",
+        "Displays board list with name and relative creation time (e.g. '2 hours ago')",
+        "'Create New Board' button at top, prompts for board name (inline input, not alert/prompt)",
+        "POST /api/boards called on create, new board appears in list immediately",
+        "Each board item is a clickable link/card that navigates to /board/:id",
+        "Empty state message when no boards exist: 'No boards yet. Create one to get started.'",
+        "Responsive layout using TailwindCSS (works on mobile and desktop)",
+        "Board route (/board/:id) renders Whiteboard component with the board ID",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill: create a board, see it in list, click to navigate"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Element persistence (auto-save to SQLite)",
+      "description": "As a user, I want my drawing to be saved automatically so that if I refresh the page, my work is not lost.",
+      "acceptanceCriteria": [
+        "Debounced save: on ELEMENTS_UPDATE, after 2 seconds of no changes, call PUT /api/boards/:id/elements",
+        "On initial room join (INIT), load saved elements from GET /api/boards/:id/elements and pass to Excalidraw initialData",
+        "Manual save trigger: keyboard shortcut Ctrl+S explicitly saves current elements",
+        "Save indicator in UI (subtle text 'Saving...' / 'Saved') near top of whiteboard",
+        "No data loss on page refresh: elements loaded from server match what was last drawn",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill: draw something, refresh, drawing persists"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "End-to-end collaboration smoke test",
+      "description": "As a developer, I want to verify that two users can draw on the same board simultaneously and see each other's changes in real-time.",
+      "acceptanceCriteria": [
+        "Two browser tabs can connect to the same board room",
+        "Drawing in tab A appears in tab B within 1 second",
+        "Cursor movement in tab A appears as remote cursor in tab B",
+        "Elements persist after both tabs refresh",
+        "No console errors in either tab during normal usage",
+        "Server correctly handles disconnect/reconnect (user leaves tab, rejoins)",
+        "User count in room updates correctly (join increases, leave decreases)"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
