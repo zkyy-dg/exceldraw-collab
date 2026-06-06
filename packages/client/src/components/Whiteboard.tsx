@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 import { Excalidraw } from "@excalidraw/excalidraw";
 import type {
   ExcalidrawImperativeAPI,
@@ -45,6 +45,9 @@ function hashColor(str: string): { background: string; stroke: string } {
   };
 }
 
+// Save status
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 interface WhiteboardProps {
   roomId: string;
 }
@@ -53,6 +56,10 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const collabSocketRef = useRef<CollabSocket | null>(null);
   const collaboratorsRef = useRef<Map<string, RemoteCollaborator>>(new Map());
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const elementsRef = useRef<readonly OrderedExcalidrawElement[]>([]);
+  const initialLoadDoneRef = useRef(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
   const updateCollaborators = useCallback(() => {
     const api = excalidrawAPIRef.current;
@@ -74,6 +81,68 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
     });
   }, []);
 
+  // Save elements to server (debounced call)
+  const saveElements = useCallback(async (elements: readonly OrderedExcalidrawElement[]) => {
+    setSaveStatus("saving");
+    try {
+      const res = await fetch(`/api/boards/${roomId}/elements`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ elements }),
+      });
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      setSaveStatus("saved");
+      // Reset to idle after 2 seconds
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (err) {
+      console.error("[Whiteboard] Save failed:", err);
+      setSaveStatus("error");
+    }
+  }, [roomId]);
+
+  // Debounced save: called on every change, actually saves after 2s of inactivity
+  const debouncedSave = useCallback((elements: readonly OrderedExcalidrawElement[]) => {
+    elementsRef.current = elements;
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = setTimeout(() => {
+      saveElements(elements);
+    }, 2000);
+  }, [saveElements]);
+
+  // Manual save via Ctrl+S
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (elementsRef.current.length > 0) {
+          saveElements(elementsRef.current);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [saveElements]);
+
+  // Load saved elements on mount
+  const loadSavedElements = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/boards/${roomId}/elements`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.elements && data.elements.length > 0 && excalidrawAPIRef.current) {
+        excalidrawAPIRef.current.updateScene({
+          elements: data.elements,
+        });
+        elementsRef.current = data.elements;
+        initialLoadDoneRef.current = true;
+      }
+    } catch (err) {
+      console.error("[Whiteboard] Failed to load saved elements:", err);
+    }
+  }, [roomId]);
+
   useEffect(() => {
     const socket = new CollabSocket(roomId, USERNAME);
     collabSocketRef.current = socket;
@@ -94,6 +163,10 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
             });
           }
           updateCollaborators();
+          // Load saved elements if not already done
+          if (!initialLoadDoneRef.current) {
+            loadSavedElements();
+          }
           break;
         }
         case "ELEMENTS_UPDATE": {
@@ -103,6 +176,9 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
             const localElements = api.getSceneElements() as readonly OrderedExcalidrawElement[];
             const merged = mergeElements(localElements, remoteElements, appState);
             api.updateScene({ elements: merged });
+            elementsRef.current = merged;
+            // Auto-save merged elements (debounced)
+            debouncedSave(merged);
           }
           break;
         }
@@ -139,8 +215,11 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
       socket.disconnect();
       collabSocketRef.current = null;
       collaboratorsRef.current.clear();
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
     };
-  }, [roomId, updateCollaborators]);
+  }, [roomId, updateCollaborators, loadSavedElements, debouncedSave]);
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     excalidrawAPIRef.current = api;
@@ -148,9 +227,12 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
 
   const handleChange = useCallback(
     (elements: readonly OrderedExcalidrawElement[], _appState: unknown, _files: unknown) => {
+      elementsRef.current = elements;
       collabSocketRef.current?.sendElementsUpdate(elements);
+      // Debounced auto-save
+      debouncedSave(elements);
     },
-    []
+    [debouncedSave]
   );
 
   const handlePointerUpdate = useCallback(
@@ -165,8 +247,22 @@ export function Whiteboard({ roomId }: WhiteboardProps) {
     []
   );
 
+  // Save indicator text
+  const saveText = {
+    idle: "",
+    saving: "Saving...",
+    saved: "Saved",
+    error: "Save error",
+  }[saveStatus];
+
   return (
-    <div style={{ height: "100%", width: "100%" }}>
+    <div style={{ height: "100%", width: "100%", position: "relative" }}>
+      {/* Save indicator */}
+      {saveText && (
+        <div className="absolute top-2 right-3 z-10 px-2 py-1 text-xs rounded bg-white/80 text-gray-500 pointer-events-none">
+          {saveText}
+        </div>
+      )}
       <Excalidraw
         excalidrawAPI={handleExcalidrawAPI}
         onChange={handleChange}
