@@ -1,5 +1,13 @@
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import type { PointerUpdate } from "@excalidraw/excalidraw/types";
+
+// Pointer data from Excalidraw's onPointerUpdate callback
+export type PointerData = {
+  x: number;
+  y: number;
+  tool: "pointer" | "laser";
+  pressure: number;
+  pointerType: string;
+};
 
 // WebSocket connection to the collaboration server
 export class CollabSocket {
@@ -74,7 +82,7 @@ export class CollabSocket {
     this.send({ type: "ELEMENTS_UPDATE", payload: { elements } });
   }
 
-  sendPointerUpdate(pointer: PointerUpdate): void {
+  sendPointerUpdate(pointer: PointerData): void {
     this.send({ type: "POINTER_UPDATE", payload: { pointer } });
   }
 
