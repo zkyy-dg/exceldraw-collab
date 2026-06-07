@@ -15,7 +15,7 @@
     "build": "pnpm --filter @exceldraw-collab/server --filter @exceldraw-collab/client build",
     "build:client": "pnpm --filter @exceldraw-collab/client build",
     "build:server": "pnpm --filter @exceldraw-collab/server build",
-    "postinstall": "npm run install:fonts && node -e \"try{require('better-sqlite3')}catch(e){const p=require('path'),d=p.join('node_modules','.pnpm');require('fs').readdirSync(d).filter(x=>x.startsWith('better-sqlite3')).forEach(x=>{require('child_process').execSync('npm run install',{cwd:p.join(d,x,'node_modules','better-sqlite3'),stdio:'inherit'})})}\"",
+    "postinstall": "npm run install:fonts && node scripts/ensure-native-modules.js",
     "install:fonts": "cp -r node_modules/@excalidraw/excalidraw/dist/prod/fonts packages/client/public/fonts",
     "test": "pnpm --parallel --filter @exceldraw-collab/server --filter @exceldraw-collab/client test"
   },
