@@ -23,16 +23,32 @@
 
 ## 快速开始
 
+### 前置条件
+
+- Node.js >= 20
+- pnpm >= 9（推荐 v10+）
+
+### 安装
+
 ```bash
 # 安装依赖
 pnpm install
 
-# 启动开发服务（前后端并行）
+# 如果 better-sqlite3 原生模块未自动编译（pnpm v10 可能跳过 build scripts）：
+pnpm rebuild better-sqlite3
+```
+
+> **注意**：pnpm v10 默认会阻止部分包的 postinstall/build scripts。如果启动后端时报 `better-sqlite3` 找不到 `.node` 文件，运行 `pnpm rebuild better-sqlite3` 即可。
+
+### 启动开发服务
+
+```bash
+# 前后端并行启动
 pnpm dev
 
-# 访问地址
-# 前端: http://localhost:5173
-# 后端: http://localhost:3001
+# 或单独启动
+pnpm dev:server    # 后端 http://localhost:3001
+pnpm dev:client    # 前端 http://localhost:5173
 ```
 
 ## 运行测试
