@@ -31,14 +31,10 @@
 ### 安装
 
 ```bash
-# 安装依赖
 pnpm install
-
-# 如果 better-sqlite3 原生模块未自动编译（pnpm v10 可能跳过 build scripts）：
-pnpm rebuild better-sqlite3
 ```
 
-> **注意**：pnpm v10 默认会阻止部分包的 postinstall/build scripts。如果启动后端时报 `better-sqlite3` 找不到 `.node` 文件，运行 `pnpm rebuild better-sqlite3` 即可。
+> 安装过程会自动编译 better-sqlite3 原生模块（兼容 pnpm v9/v10）。如果安装时网络不通导致 prebuild-install 失败，系统会自动回退到 node-gyp 本地编译，需要确保有 `python3` 和 `make`/`g++`。
 
 ### 启动开发服务
 
