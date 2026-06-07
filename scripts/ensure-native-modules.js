@@ -23,14 +23,12 @@ if (nativePkgs.length === 0) {
 
 for (const pkg of nativePkgs) {
   const pkgDir = path.join(pnpmStore, pkg, "node_modules", "better-sqlite3");
+  const nativeFile = path.join(pkgDir, "build", "Release", "better_sqlite3.node");
 
-  // Check if already compiled
-  try {
-    require("better-sqlite3");
-    console.log("[ensure-native-modules] better-sqlite3 already loadable, skipping.");
+  // Check if native binary exists
+  if (fs.existsSync(nativeFile)) {
+    console.log("[ensure-native-modules] better-sqlite3 native binary found, skipping.");
     process.exit(0);
-  } catch (_) {
-    // Not compiled yet, proceed
   }
 
   console.log(`[ensure-native-modules] Compiling ${pkg} via npm run install...`);
